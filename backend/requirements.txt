@@ -1,0 +1,7 @@
+flask
+flask-cors
+numpy
+# For FOL (can be replaced by custom implementation)
+sympy
+# For Probabilistic Reasoning
+# pgmpy

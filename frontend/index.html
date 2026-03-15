@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wumpus World AI Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body class="dark-mode">
+    <div class="glass-container">
+        <header>
+            <h1>Intelligent Wumpus World Agent</h1>
+            <p class="subtitle">First Order Logic & Probabilistic Reasoning</p>
+        </header>
+
+        <main class="dashboard-grid">
+            <section class="game-view card">
+                <div class="card-header">
+                    <h2>World Grid</h2>
+                    <div class="controls">
+                        <button id="reset-btn" class="btn-secondary">Reset</button>
+                        <button id="step-btn" class="btn-primary">Step</button>
+                    </div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="wumpus-canvas"></canvas>
+                </div>
+            </section>
+
+            <section class="side-panel">
+                <div class="stats card">
+                    <h3>Simulation Stats</h3>
+                    <div class="stat-item">
+                        <span>Score:</span>
+                        <span id="score-val">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Moves:</span>
+                        <span id="moves-val">0</span>
+                    </div>
+                </div>
+
+                <div class="percepts card">
+                    <h3>Percepts</h3>
+                    <div id="percept-indicators" class="indicators">
+                        <div class="indicator" data-type="stench">Stench</div>
+                        <div class="indicator" data-type="breeze">Breeze</div>
+                        <div class="indicator" data-type="glitter">Glitter</div>
+                        <div class="indicator" data-type="bump">Bump</div>
+                        <div class="indicator" data-type="scream">Scream</div>
+                    </div>
+                </div>
+
+                <div class="logs card">
+                    <h3>Action Log</h3>
+                    <div id="log-content" class="log-area">
+                        <p>Welcome to Wumpus World.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="ai-controls card">
+            <div class="ai-header">
+                <h3>AI Reasoning</h3>
+                <label class="switch">
+                    <input type="checkbox" id="ai-mode-toggle">
+                    <span class="slider round"></span>
+                </label>
+                <span>Auto-Mode</span>
+            </div>
+            <div class="kb-display">
+                <p>Knowledge Base: <span id="kb-count">0</span> facts</p>
+                <div id="ai-thoughts" class="thoughts">
+                    Waiting for input...
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
