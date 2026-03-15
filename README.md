@@ -1,121 +1,174 @@
-# Wumpus World Simulator
+# 🏹 Intelligent Wumpus World Agent Simulator
 
-Simulator for the AI Wumpus World game in C++ with Python wrapper.
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Written by Larry Holder (holder@wsu.edu).
+An interactive AI simulation of the classic **Wumpus World problem**, demonstrating how an intelligent agent uses **First Order Logic** and **Probabilistic Reasoning** to navigate an unknown environment and locate hidden treasure while avoiding deadly hazards.
 
-The Wumpus Simulator is a simple framework for simulating the Wumpus World
-described in Russell and Norvig's "Artificial Intelligence: A Modern
-Approach". The simulator is written in C++, but you can design your agent in
-either C++ or Python. The idea is for you to modify the Agent.h and Agent.cc
-(or Agent.py) files to implement your super-smart agent. The C++ and Python agents
-provided simply accept commands from the keyboard and execute them in the
-simulator.  The keyboard commands are 'f' for forward, 'l' for turnleft, 'r'
-for turnright, 'g' for grab, 's' for shoot, and 'c' for climb.
+---
 
-## Quick Start
+## 📸 Simulation Preview
 
-To try out the simulator, install the code on a UNIX system (or a system that
-has the 'make' program installed and a C++ compiler). Type 'make' to build the
-'wumpsim' executable. Then, type './wumpsim'. You should see a
-randomly-generated 4x4 world, information about the game state, and a prompt
-for the next action. When the game is over, scoring information is provided.
+![Wumpus World Simulator Preview](frontend/assets/simulator_preview.png)
+*Live view of the Intelligent Agent navigating the 4x4 grid.*
 
-If you want to code your agent in Python, see the "Python Agent" section below.
+---
 
-Simulator Options
------------------
+## 🌟 Project Overview
 
-The wumpus simulator takes a few options, as described below.
+The **Wumpus World** is a well-known problem in Artificial Intelligence used to demonstrate reasoning under uncertainty.
 
-`-size <N>` lets you to set the size of the world to NxN (N>1). Default is 4.
+In this simulation:
+- An **agent explores a grid-based world**
+- The world contains **pits**, a **Wumpus monster**, and **gold**
+- The agent **cannot see the entire world**
+- It must **infer hidden dangers using percepts and logical reasoning**
 
-`-trials <N>` runs the simulator for N trials, where each trial generates a new
-wumpus world. Default is 1.
+### The Percept System
 
-`-tries <N>` runs each trial of the simulator N times, giving your agent
-multiple tries at the same world. Default is 1.
+| Percept | Meaning | Icon |
+| :--- | :--- | :--- |
+| **Breeze** | A pit is nearby | 🌬️ |
+| **Stench** | The Wumpus is nearby | 🤢 |
+| **Glitter** | Gold is in the current cell | ✨ |
+| **Bump** | The agent hit a wall | 🧱 |
+| **Scream** | The Wumpus has been killed | 😱 |
 
-`-seed <N>` lets you set the random number seed to some positive integer so that
-the simulator generates the same sequence of worlds each run. By default, the
-random number seed is set semi-randomly based on the clock.
+---
 
-`-world <file>` lets you play a specific world as specified in the given file.
-The -size option is ignored, and each try and trial uses the same world. The
-format of the world file is as follows (all lowercase, must appear in this
-order):
+## 🚀 Key Features
 
+### 🧠 Intelligent AI Agent
+- **First Order Logic (FOL):** Uses SymPy-powered deduction to prove tile safety.
+- **Probabilistic Reasoning:** When facts are insufficient, the agent calculates risk weights.
+- **Dynamic Exploration:** Prioritizes safe tiles and chooses the least risky path when necessary.
+
+### 💻 Interactive Web Simulation
+- **Visual 4×4 Grid:** Real-time updates of agent position and world state.
+- **Real-Time Percepts:** Current cell signals (Stench, Breeze, etc.) clearly highlighted.
+- **Live Action Log:** Transparent view of every decision made by the AI.
+
+### 🎮 Dual Mode Operation
+- **Manual Mode:** You control the agent while observing its logical recommendations.
+- **Auto Mode:** Let the AI autonomously solve the environment from start to finish.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    A[Frontend UI - HTML/CSS/JS] <--> B[Flask API Server]
+    B <--> C[Logic Engine - SymPy]
+    B <--> D[Probability Engine - NumPy]
+    B <--> E[Simulator Environment]
 ```
-size N
-wumpus N N
-gold N N
-pit N N
-pit N N
-...
 
+### Backend Modules
+- **Logic Engine:** Implements the Knowledge Base. Infers safe tiles using propositional and first-order logic.
+- **Probability Engine:** Calculates risk probabilities for unknown tiles when logic provides no safe options.
+- **Simulator:** Manages the game world, truth state, and agent physical interactions.
+
+---
+
+## 📂 Project Structure
+
+```text
+wumpus-world-simulator
+├── backend/
+│   ├── ai/
+│   │   ├── agent.py               # Main Intelligent Agent logic
+│   │   ├── logic_engine.py        # FOL and Knowledge Base
+│   │   └── probability_engine.py  # Probabilistic calculations
+│   ├── simulator/
+│   │   └── simulator.py           # Core game environment
+│   ├── app.py                     # Flask Server Entry Point
+│   └── requirements.txt           # Python Dependencies
+├── frontend/
+│   ├── assets/                    # Images and Icons
+│   ├── css/
+│   │   └── styles.css             # Glassmorphic UI Styling
+│   ├── js/
+│   │   ├── api.js                 # API Communication
+│   │   ├── main.js                # UI Logic & Controller
+│   │   └── renderer.js            # Grid & Stats Rendering
+│   └── index.html                 # Main Dashboard
+└── README.md
 ```
-where N is a positive integer. Some error checking is performed. A sample
-world file is provided in testworld.txt.
 
-## Simulator Details
+---
 
-The simulator works by generating a new world and a new agent for each trial.
-Before each try on this world, the agent's Initialize() method is called, which
-you can use to perform any pre-game preparation. Then, the game starts.  The
-agent's Process() method is called with the current Percept, and the agent
-should return an action, which is performed in the simulator. This continues
-until the game is over (agent dies or leaves cave) or the maximum number of
-moves (1000) is exceeded. When the game is over, the Agent's GameOver() method
-is called with the final score. If additional tries are left for this world,
-then the world is re-initialized, and the agent's Initialize() method is called
-again, and play proceeds on another instance of the same game.
+## 🔨 Technologies Used
 
-After the number of tries is completed, the agent is deleted. So, you may want
-to store some information in the agent's destructor method to be reloaded
-during the agent's constructor method when reborn for the next trial. If
-additional trials have been requested, then a new wumpus world is generated,
-and the process continues as described above.
+- **Python:** The brain of the simulation.
+- **Flask:** Light-weight backend API.
+- **JavaScript:** Reactive frontend interactions.
+- **SymPy:** Powerhouse for logical inference and propositional logic.
+- **NumPy:** Handles probabilistic matrices and calculations.
 
-Scoring information is output at the end of each try, each trial and at the end
-of the simulation.
+---
 
-## Agent Details
+## ⚙️ How to Run the Project
 
-Your agent must include at least five methods: constructor, destructor,
-Initialize, Process, and GameOver. You may change any or all of these methods
-to implement your agent. And you may include additional methods as you see fit.
-You may also take advantage of the other classes defined for the simulator
-(e.g., Percept, Action, Orientation, Location, WorldState, WumpusWorld) by
-including them directly, subclassing them, or borrowing code for your agent.
-Once your agent is complete, simply type 'make' to remake the simulator with
-your C++ agent. Then run 'wumpsim' to try it out. Or, for a Python agent,
-simply run 'pywumpsim'; no need to recompile the simulator.
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/krishna-marathe/intelligent_wumpus_agent_simulator.git
+cd intelligent_wumpus_agent_simulator
+```
 
-## Python Agent
+### 2️⃣ Install Dependencies
+```bash
+pip install -r backend/requirements.txt
+```
 
-You can also implement your agent in Python 2 or 3. First, you will need to
-compile a different version of the simulator that supports calling external
-Python agent functions. Instead of 'make' or 'make wumpsim', you should instead
-compile the simulator using 'make pywumpsim'.  On some platforms you need to
-set the PYTHONPATH environment variable to your working directory, where
-pywumpsim and Agent.py reside.
+### 3️⃣ Start the Backend Server
+```bash
+python backend/app.py
+```
 
-Next, you will make all your changes to the Agent.py file. This file contains
-the Agent class consisting five methods: constructor (\_\_init\_\_), destructor
-(\_\_del\_\_), Initialize, Process, and GameOver.  Note that the Process
-method takes a percept class as defined in Percept.py.  The Process function
-should return one of the six actions defined in Action.py.
+### 4️⃣ Launch the Dashboard
+Open your browser and navigate to:
+`http://localhost:5000`
 
-Once you've finished your Agent.py file, simply run the 'pywumpsim' program
-to test your agent. The Agent.py file and the 'pywumpsim' executable must be
-in the same directory. The 'pywumpsim' program accepts all the options
-described above for 'wumpsim'. And there is no need to recompile 'pywumpsim'
-after changes to Agent.py; this file is reloaded everytime 'pywumpsim' is
-executed.
+---
 
-Happy hunting!
+## 📜 Development Log
 
-## Contributors
+### Phase 1: Core Engine
+- ✅ Implemented basic 4x4 grid simulator.
+- ✅ Added random world generation (Pits, Wumpus, Gold).
+- ✅ Built the physical action system (Move, Turn, Grab, Shoot).
 
-Thanks to [Sergio Tessaris](https://github.com/stessaris) for updates to support Python 3.
+### Phase 2: AI Intelligence
+- ✅ Integrated **SymPy** for logical deduction.
+- ✅ Developed the **Knowledge Base** (KB) to store spatial facts.
+- ✅ Implemented **Probabilistic Risk Assessment** for "blind" moves.
 
+### Phase 3: Modern UI
+- ✅ Created a premium **Glassmorphism-styled** dashboard.
+- ✅ Integrated real-time API polling for state updates.
+- ✅ Added the **Action Log** for better transparency.
+
+---
+
+## 🎓 Educational Value
+
+This project is a practical implementation of concepts from **"Artificial Intelligence: A Modern Approach"** by Russell & Norvig. It serves as a study in:
+- Knowledge Representation
+- Logical Inference (Modus Ponens, Resolution)
+- Decision Making under Uncertainty
+- Probabilistic Graphical Models
+
+---
+
+## 👤 Author
+
+**Krishna Marathe**
+*Student – Vishwakarma Institute of Technology, Pune*
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
