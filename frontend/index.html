@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wumpus World AI Dashboard</title>
     <link rel="stylesheet" href="css/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="dark-mode">
     <div class="glass-container">
         <header>
             <h1>Intelligent Wumpus World Agent</h1>
-            <p class="subtitle">First Order Logic & Probabilistic Reasoning</p>
+            <p class="subtitle">First Order Logic &amp; Probabilistic Reasoning</p>
         </header>
 
         <main class="dashboard-grid">
@@ -38,6 +38,24 @@
                     <div class="stat-item">
                         <span>Moves:</span>
                         <span id="moves-val">0</span>
+                    </div>
+                    <div class="rules-legend">
+                        <strong>Scoring:</strong> Base 1000<br>
+                        Move: −1 · Kill Wumpus: +500<br>
+                        Grab Gold: +1000 · Exit w/ Gold: +2000<br>
+                        Die: −1000
+                    </div>
+                </div>
+
+                <div class="controls-help card">
+                    <h3>Controls</h3>
+                    <div class="control-grid">
+                        <div class="ctrl-row"><kbd>↑</kbd> / <kbd>W</kbd> <span>Move Forward</span></div>
+                        <div class="ctrl-row"><kbd>←</kbd> / <kbd>A</kbd> <span>Turn Left</span></div>
+                        <div class="ctrl-row"><kbd>→</kbd> / <kbd>D</kbd> <span>Turn Right</span></div>
+                        <div class="ctrl-row"><kbd>G</kbd> <span>Grab Gold</span></div>
+                        <div class="ctrl-row"><kbd>S</kbd> <span>Shoot Arrow</span></div>
+                        <div class="ctrl-row"><kbd>C</kbd> <span>Climb Out (at EXIT)</span></div>
                     </div>
                 </div>
 
@@ -77,6 +95,20 @@
                 </div>
             </div>
         </footer>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-card">
+            <h2 id="modal-title">Game Over</h2>
+            <div class="modal-body">
+                <div class="modal-stat"><span>Final Score</span><span id="modal-score" class="modal-value">0</span></div>
+                <div class="modal-stat"><span>Total Moves</span><span id="modal-moves" class="modal-value">0</span></div>
+                <div class="modal-stat"><span>Gold Collected</span><span id="modal-gold" class="modal-value">—</span></div>
+                <div class="modal-stat"><span>Wumpus Killed</span><span id="modal-wumpus" class="modal-value">—</span></div>
+            </div>
+            <button id="modal-close-btn" class="btn-primary" style="width:100%;margin-top:1.5rem;">Play Again</button>
+        </div>
     </div>
 
     <script src="js/api.js"></script>

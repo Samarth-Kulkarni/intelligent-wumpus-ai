@@ -4,96 +4,110 @@
 [![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An interactive AI simulation of the classic **Wumpus World problem**, demonstrating how an intelligent agent uses **First Order Logic** and **Probabilistic Reasoning** to navigate an unknown environment and locate hidden treasure while avoiding deadly hazards.
+An interactive AI simulation of the classic **Wumpus World problem** — an intelligent agent navigates an 8×8 maze using **First Order Logic** and **Probabilistic Reasoning** to avoid deadly hazards, hunt the Wumpus, collect gold, and escape alive.
+
+> **Subject:** Mathematical Foundations of Artificial Intelligence (MFAI)
 
 ---
 
-## 📸 Simulation Preview
-
-![Wumpus World Simulator Preview](frontend/assets/simulator_preview.png)
-*Live view of the Intelligent Agent navigating the 4x4 grid.*
-
----
+⚠️ This project is currently under development.
 
 ## 🌟 Project Overview
 
-The **Wumpus World** is a well-known problem in Artificial Intelligence used to demonstrate reasoning under uncertainty.
+The **Wumpus World** is a benchmark problem in AI (Russell & Norvig, *AI: A Modern Approach*) used to demonstrate reasoning under uncertainty.
 
 In this simulation:
-- An **agent explores a grid-based world**
-- The world contains **pits**, a **Wumpus monster**, and **gold**
-- The agent **cannot see the entire world**
-- It must **infer hidden dangers using percepts and logical reasoning**
+- An agent explores an **8×8 maze** generated with DFS recursive backtracking
+- The maze contains **pits**, a **Wumpus monster**, and **gold**
+- The agent has **partial observability** — it cannot see the full maze
+- It uses **logical inference** and **probability** to make safe decisions
 
-### The Percept System
+### Percept System
 
-| Percept | Meaning | Icon |
-| :--- | :--- | :--- |
-| **Breeze** | A pit is nearby | 🌬️ |
-| **Stench** | The Wumpus is nearby | 🤢 |
-| **Glitter** | Gold is in the current cell | ✨ |
-| **Bump** | The agent hit a wall | 🧱 |
-| **Scream** | The Wumpus has been killed | 😱 |
+| Percept | Meaning |
+| :--- | :--- |
+| **Stench** | The Wumpus is in an adjacent (reachable) cell |
+| **Breeze** | A pit is in an adjacent (reachable) cell |
+| **Glitter** | Gold is in the current cell |
+| **Bump** | The agent walked into a wall |
+| **Scream** | The Wumpus has been killed by the arrow |
 
 ---
 
 ## 🚀 Key Features
 
 ### 🧠 Intelligent AI Agent
-- **First Order Logic (FOL):** Uses SymPy-powered deduction to prove tile safety.
-- **Probabilistic Reasoning:** When facts are insufficient, the agent calculates risk weights.
-- **Dynamic Exploration:** Prioritizes safe tiles and chooses the least risky path when necessary.
+- **First Order Logic (FOL):** SymPy-powered deduction proves cell safety
+- **Probabilistic Reasoning:** Bayesian-style risk estimation when logic is insufficient
+- **Committed Navigation Plans:** BFS path planning prevents the agent from getting stuck
+- **Wumpus Hunting:** Agent shoots when stench is detected; tracks arrow usage
+- **Gold Collection & Homing:** Grabs gold on glitter, then BFS shortest path to EXIT
 
-### 💻 Interactive Web Simulation
-- **Visual 4×4 Grid:** Real-time updates of agent position and world state.
-- **Real-Time Percepts:** Current cell signals (Stench, Breeze, etc.) clearly highlighted.
-- **Live Action Log:** Transparent view of every decision made by the AI.
+### 🗺️ Proper Maze Environment
+- **DFS Recursive Backtracking** generates real corridors with wall edges
+- **Wall-edge rendering** — walls are drawn as lines between cells, not blocks
+- **START** (bottom-left) and **EXIT** (top-right) clearly labeled
+- **Scoring System:** Base 1000, −1/action, +500 kill Wumpus, +1000 grab gold, +2000 exit with gold, −1000 die
 
 ### 🎮 Dual Mode Operation
-- **Manual Mode:** You control the agent while observing its logical recommendations.
-- **Auto Mode:** Let the AI autonomously solve the environment from start to finish.
+- **Manual Mode:** Control with keyboard — `↑/W` move, `←/A` turn left, `→/D` turn right, `G` grab, `S` shoot, `C` climb
+- **Auto Mode:** Watch the AI autonomously explore, reason, and solve the maze
+
+### 💻 Interactive Dashboard
+- **Real-time maze visualization** on HTML5 Canvas
+- **Percept indicators** light up based on current cell signals
+- **Action Log** traces every decision
+- **AI Reasoning panel** shows logical deductions and probabilistic analysis
+- **Knowledge Base counter** tracks proven-safe facts
+- **Game Over modal** displays final score, moves, gold status, and Wumpus kill status
 
 ---
 
 ## 🏗️ System Architecture
 
-```mermaid
-graph TD
-    A[Frontend UI - HTML/CSS/JS] <--> B[Flask API Server]
-    B <--> C[Logic Engine - SymPy]
-    B <--> D[Probability Engine - NumPy]
-    B <--> E[Simulator Environment]
 ```
-
-### Backend Modules
-- **Logic Engine:** Implements the Knowledge Base. Infers safe tiles using propositional and first-order logic.
-- **Probability Engine:** Calculates risk probabilities for unknown tiles when logic provides no safe options.
-- **Simulator:** Manages the game world, truth state, and agent physical interactions.
+Frontend (Browser)
+├── HTML5 Canvas — Maze renderer with wall edges
+├── CSS3 — Dark glassmorphic UI theme
+└── JavaScript — API client, controls, dashboard
+        │
+        │  REST API (JSON)
+        ▼
+Backend (Python Flask — app.py)
+├── simulator/simulator.py
+│   ├── DFS maze generation (wall edges between cells)
+│   ├── Percept system (stench, breeze, glitter, bump, scream)
+│   ├── Action execution (move, turn, grab, shoot, climb)
+│   └── Scoring engine
+└── ai/
+    ├── agent.py — Decision engine, BFS pathfinding, committed plans
+    ├── logic_engine.py — FOL clause database, entailment checking
+    └── probability_engine.py — Bayesian risk scoring, frontier analysis
+```
 
 ---
 
 ## 📂 Project Structure
 
-```text
-wumpus-world-simulator
+```
+intelligent_wumpus_agent_simulator/
 ├── backend/
 │   ├── ai/
-│   │   ├── agent.py               # Main Intelligent Agent logic
-│   │   ├── logic_engine.py        # FOL and Knowledge Base
-│   │   └── probability_engine.py  # Probabilistic calculations
+│   │   ├── agent.py               # Intelligent Agent — decision engine & BFS
+│   │   ├── logic_engine.py        # FOL Knowledge Base & inference
+│   │   └── probability_engine.py  # Probabilistic risk estimation
 │   ├── simulator/
-│   │   └── simulator.py           # Core game environment
-│   ├── app.py                     # Flask Server Entry Point
-│   └── requirements.txt           # Python Dependencies
+│   │   └── simulator.py           # Maze generation, percepts, scoring
+│   ├── app.py                     # Flask API server
+│   └── requirements.txt           # Python dependencies
 ├── frontend/
-│   ├── assets/                    # Images and Icons
 │   ├── css/
-│   │   └── styles.css             # Glassmorphic UI Styling
+│   │   └── styles.css             # Dark-themed glassmorphic UI
 │   ├── js/
-│   │   ├── api.js                 # API Communication
-│   │   ├── main.js                # UI Logic & Controller
-│   │   └── renderer.js            # Grid & Stats Rendering
-│   └── index.html                 # Main Dashboard
+│   │   ├── api.js                 # REST API client
+│   │   ├── main.js                # Dashboard controller & game-over modal
+│   │   └── renderer.js            # Canvas maze renderer (wall edges)
+│   └── index.html                 # Main dashboard page
 └── README.md
 ```
 
@@ -101,74 +115,101 @@ wumpus-world-simulator
 
 ## 🔨 Technologies Used
 
-- **Python:** The brain of the simulation.
-- **Flask:** Light-weight backend API.
-- **JavaScript:** Reactive frontend interactions.
-- **SymPy:** Powerhouse for logical inference and propositional logic.
-- **NumPy:** Handles probabilistic matrices and calculations.
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| Backend | Python 3, Flask | Game logic, REST API |
+| AI Logic | SymPy | First Order Logic & entailment |
+| Frontend | HTML5 Canvas, CSS, JS | Maze rendering, dashboard |
+| Maze | DFS Recursive Backtracking | Corridor-based maze with wall edges |
+| Pathfinding | BFS | Navigation, backtracking, homing |
+| API | REST (JSON) | Frontend ↔ Backend communication |
 
 ---
 
-## ⚙️ How to Run the Project
+## ⚙️ How to Run
 
-### 1️⃣ Clone the Repository
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/krishna-marathe/intelligent_wumpus_agent_simulator.git
 cd intelligent_wumpus_agent_simulator
 ```
 
-### 2️⃣ Install Dependencies
+### 2. Install Dependencies
 ```bash
 pip install -r backend/requirements.txt
 ```
 
-### 3️⃣ Start the Backend Server
+### 3. Start the Server
 ```bash
 python backend/app.py
 ```
 
-### 4️⃣ Launch the Dashboard
-Open your browser and navigate to:
-`http://localhost:5000`
+### 4. Open the Dashboard
+Navigate to **http://localhost:5000** in your browser.
 
 ---
 
-## 📜 Development Log
+## 🎮 Controls
 
-### Phase 1: Core Engine
-- ✅ Implemented basic 4x4 grid simulator.
-- ✅ Added random world generation (Pits, Wumpus, Gold).
-- ✅ Built the physical action system (Move, Turn, Grab, Shoot).
+| Key | Action |
+|-----|--------|
+| `↑` / `W` | Move Forward |
+| `←` / `A` | Turn Left |
+| `→` / `D` | Turn Right |
+| `G` | Grab Gold |
+| `S` | Shoot Arrow |
+| `C` | Climb Out (at EXIT) |
 
-### Phase 2: AI Intelligence
-- ✅ Integrated **SymPy** for logical deduction.
-- ✅ Developed the **Knowledge Base** (KB) to store spatial facts.
-- ✅ Implemented **Probabilistic Risk Assessment** for "blind" moves.
-
-### Phase 3: Modern UI
-- ✅ Created a premium **Glassmorphism-styled** dashboard.
-- ✅ Integrated real-time API polling for state updates.
-- ✅ Added the **Action Log** for better transparency.
+Toggle **Auto-Mode** to let the AI play autonomously.
 
 ---
 
-## 🎓 Educational Value
+## 🧠 AI Decision Algorithm
 
-This project is a practical implementation of concepts from **"Artificial Intelligence: A Modern Approach"** by Russell & Norvig. It serves as a study in:
-- Knowledge Representation
-- Logical Inference (Modus Ponens, Resolution)
-- Decision Making under Uncertainty
-- Probabilistic Graphical Models
+```
+1. PERCEPT    → Receive stench, breeze, glitter, bump, scream
+2. KB UPDATE  → Update Knowledge Base; apply FOL to deduce safe cells
+3. PRIORITY   → Glitter? Grab. Stench + arrow? Shoot.
+4. SAFE MOVE  → Go to proven-safe unvisited neighbor
+5. BACKTRACK  → BFS through visited cells to nearest safe frontier
+6. RISK MOVE  → Probabilistic ranking of frontier; pick lowest risk
+7. HOMING     → After gold: BFS to EXIT → follow plan → Climb Out
+```
+
+---
+
+## 🎓 MFAI Concepts Applied
+
+| Concept | Application |
+|---------|-------------|
+| **First Order Logic** | ∀x: Breeze(x) → ∃y: Adjacent(x,y) ∧ Pit(y) |
+| **Knowledge Representation** | KB stores safe cells, visited cells, percept observations |
+| **Logical Inference** | No breeze → all neighbors safe (KB ⊨ Safe) |
+| **Probabilistic Reasoning** | Bayesian risk estimation for frontier cells |
+| **Intelligent Agents** | PEAS framework: Percept → Reason → Act loop |
+
+---
+
+## 📊 Scoring System
+
+| Event | Points |
+|-------|--------|
+| Base Score | 1000 |
+| Each Action | −1 |
+| Kill Wumpus | +500 |
+| Grab Gold | +1000 |
+| Exit with Gold | +2000 |
+| Die (pit/Wumpus) | −1000 |
 
 ---
 
 ## 👤 Author
 
 **Krishna Marathe**
-*Student – Vishwakarma Institute of Technology, Pune*
+*Vishwakarma Institute of Technology, Pune*
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
