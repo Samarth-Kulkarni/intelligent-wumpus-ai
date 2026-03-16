@@ -19,187 +19,218 @@ class Orientation:
     DOWN = 3
 
 class WumpusWorld:
-    def __init__(self, size=4, world_file=None):
+    """Wumpus World with proper DFS-generated maze (wall-edges between cells)."""
+
+    def __init__(self, size=8):
         self.size = size
+        self.walls = set()          # wall edges: {((x1,y1),(x2,y2)), ...}
+        self.exit_location = [size, size]
         self.wumpus_location = [0, 0]
         self.gold_location = [0, 0]
         self.pit_locations = []
         self.wumpus_alive = True
-        self.num_actions = 0
-        self.agent_location = [1, 1]
-        self.agent_orientation = Orientation.RIGHT
-        self.agent_alive = True
-        self.agent_has_arrow = True
-        self.agent_has_gold = True
-        self.agent_in_cave = True
-        self.last_action = None
-        self.percept = {"stench": False, "breeze": False, "glitter": False, "bump": False, "scream": False}
-        
-        if world_file:
-            self._load_world(world_file)
-        else:
-            self._generate_world()
-            
-        self.initialize()
-
-    def _load_world(self, world_file):
-        # Placeholder for loading from file if needed
-        pass
-
-    def _generate_world(self):
-        def get_rand_pos():
-            while True:
-                x = random.randint(1, self.size)
-                y = random.randint(1, self.size)
-                if x != 1 or y != 1:
-                    return [x, y]
-
-        self.wumpus_location = get_rand_pos()
-        self.gold_location = get_rand_pos()
-        
-        self.pit_locations = []
-        for x in range(1, self.size + 1):
-            for y in range(1, self.size + 1):
-                if x != 1 or y != 1:
-                    if random.random() < 0.2:
-                        self.pit_locations.append([x, y])
-
-    def initialize(self):
-        self.num_actions = 0
         self.agent_location = [1, 1]
         self.agent_orientation = Orientation.RIGHT
         self.agent_alive = True
         self.agent_has_arrow = True
         self.agent_has_gold = False
         self.agent_in_cave = True
-        self.wumpus_alive = True
-        self.last_action = None
+        self.num_actions = 0
+        self.last_action = ""
+        self.percept = {"stench": False, "breeze": False, "glitter": False, "bump": False, "scream": False}
+
+        self._generate_maze()
+        self._place_entities()
         self.percept = self._get_percept()
 
-    def _is_adjacent(self, loc1, loc2):
-        dx = abs(loc1[0] - loc2[0])
-        dy = abs(loc1[1] - loc2[1])
-        return (dx == 1 and dy == 0) or (dx == 0 and dy == 1)
+    # ─── Maze Generation ────────────────────────────────────────────────
+
+    def _wk(self, c1, c2):
+        """Canonical wall key."""
+        return (min(c1, c2), max(c1, c2))
+
+    def _has_wall(self, c1, c2):
+        return self._wk(tuple(c1), tuple(c2)) in self.walls
+
+    def _generate_maze(self):
+        """Recursive-backtracking DFS to carve a proper maze."""
+        s = self.size
+        self.walls = set()
+        for x in range(1, s + 1):
+            for y in range(1, s + 1):
+                if x < s:
+                    self.walls.add(self._wk((x, y), (x + 1, y)))
+                if y < s:
+                    self.walls.add(self._wk((x, y), (x, y + 1)))
+
+        visited = {(1, 1)}
+        stack = [(1, 1)]
+        while stack:
+            cx, cy = stack[-1]
+            nbrs = []
+            for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                nx, ny = cx + dx, cy + dy
+                if 1 <= nx <= s and 1 <= ny <= s and (nx, ny) not in visited:
+                    nbrs.append((nx, ny))
+            if nbrs:
+                nxt = random.choice(nbrs)
+                self.walls.discard(self._wk((cx, cy), nxt))
+                visited.add(nxt)
+                stack.append(nxt)
+            else:
+                stack.pop()
+
+        # Remove a few extra walls so the maze isn't a single-path tree
+        removable = list(self.walls)
+        random.shuffle(removable)
+        for i in range(min(s, len(removable))):
+            self.walls.discard(removable[i])
+
+    def _place_entities(self):
+        s = self.size
+        avoid = {(1, 1), (s, s)}
+
+        def rp():
+            while True:
+                p = (random.randint(1, s), random.randint(1, s))
+                if p not in avoid:
+                    return list(p)
+
+        self.exit_location = [s, s]
+        self.wumpus_location = rp(); avoid.add(tuple(self.wumpus_location))
+        self.gold_location = rp();   avoid.add(tuple(self.gold_location))
+
+        self.pit_locations = []
+        for _ in range(random.randint(2, max(3, s // 3))):
+            pit = rp()
+            while tuple(pit) in avoid:
+                pit = rp()
+            self.pit_locations.append(pit)
+            avoid.add(tuple(pit))
+
+    # ─── Helpers ────────────────────────────────────────────────────────
+
+    def _connected_neighbors(self, loc):
+        x, y = loc[0], loc[1]
+        out = []
+        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            nx, ny = x + dx, y + dy
+            if 1 <= nx <= self.size and 1 <= ny <= self.size:
+                if not self._has_wall((x, y), (nx, ny)):
+                    out.append([nx, ny])
+        return out
 
     def _get_percept(self):
-        p = {
-            "stench": False,
-            "breeze": False,
-            "glitter": False,
-            "bump": False,
-            "scream": False
-        }
-        
-        # Stench
-        if self._is_adjacent(self.agent_location, self.wumpus_location) or self.agent_location == self.wumpus_location:
-            p["stench"] = True
-            
-        # Breeze
-        for pit in self.pit_locations:
-            if self._is_adjacent(self.agent_location, pit):
+        p = {"stench": False, "breeze": False, "glitter": False, "bump": False, "scream": False}
+        for n in self._connected_neighbors(self.agent_location):
+            if n == self.wumpus_location and self.wumpus_alive:
+                p["stench"] = True
+            if n in self.pit_locations:
                 p["breeze"] = True
-                break
-                
-        # Glitter
+        if self.agent_location == self.wumpus_location and self.wumpus_alive:
+            p["stench"] = True
         if not self.agent_has_gold and self.agent_location == self.gold_location:
             p["glitter"] = True
-            
         return p
+
+    # ─── Actions ────────────────────────────────────────────────────────
 
     def execute_action(self, action):
         if not self.agent_alive or not self.agent_in_cave:
             return
-            
-        self.num_actions += 1
         self.last_action = Action.to_string(action)
         self.percept["bump"] = False
         self.percept["scream"] = False
 
         if action == Action.GOFORWARD:
-            if self.agent_orientation == Orientation.RIGHT:
-                if self.agent_location[0] < self.size: self.agent_location[0] += 1
-                else: self.percept["bump"] = True
-            elif self.agent_orientation == Orientation.UP:
-                if self.agent_location[1] < self.size: self.agent_location[1] += 1
-                else: self.percept["bump"] = True
-            elif self.agent_orientation == Orientation.LEFT:
-                if self.agent_location[0] > 1: self.agent_location[0] -= 1
-                else: self.percept["bump"] = True
-            elif self.agent_orientation == Orientation.DOWN:
-                if self.agent_location[1] > 1: self.agent_location[1] -= 1
-                else: self.percept["bump"] = True
-            
-            # Check for death
-            for pit in self.pit_locations:
-                if self.agent_location == pit:
-                    self.agent_alive = False
+            self.num_actions += 1
+            nx, ny = self.agent_location[0], self.agent_location[1]
+            if   self.agent_orientation == Orientation.RIGHT: nx += 1
+            elif self.agent_orientation == Orientation.UP:    ny += 1
+            elif self.agent_orientation == Orientation.LEFT:  nx -= 1
+            elif self.agent_orientation == Orientation.DOWN:  ny -= 1
+
+            if not (1 <= nx <= self.size and 1 <= ny <= self.size):
+                self.percept["bump"] = True
+            elif self._has_wall(self.agent_location, (nx, ny)):
+                self.percept["bump"] = True
+            else:
+                self.agent_location = [nx, ny]
+
+            if self.agent_location in self.pit_locations:
+                self.agent_alive = False
             if self.wumpus_alive and self.agent_location == self.wumpus_location:
                 self.agent_alive = False
-                
+
         elif action == Action.TURNLEFT:
             self.agent_orientation = (self.agent_orientation + 1) % 4
         elif action == Action.TURNRIGHT:
             self.agent_orientation = (self.agent_orientation - 1) % 4
+
         elif action == Action.GRAB:
+            self.num_actions += 1
             if not self.agent_has_gold and self.agent_location == self.gold_location:
                 self.agent_has_gold = True
+
         elif action == Action.SHOOT:
+            self.num_actions += 1
             if self.agent_has_arrow:
                 self.agent_has_arrow = False
                 if self.wumpus_alive:
                     ax, ay = self.agent_location
                     wx, wy = self.wumpus_location
                     hit = False
-                    if self.agent_orientation == Orientation.RIGHT:
-                        if ay == wy and ax < wx: hit = True
-                    elif self.agent_orientation == Orientation.UP:
-                        if ax == wx and ay < wy: hit = True
-                    elif self.agent_orientation == Orientation.LEFT:
-                        if ay == wy and ax > wx: hit = True
-                    elif self.agent_orientation == Orientation.DOWN:
-                        if ax == wx and ay > wy: hit = True
-                    
+                    if   self.agent_orientation == Orientation.RIGHT and ay == wy and ax < wx: hit = True
+                    elif self.agent_orientation == Orientation.UP    and ax == wx and ay < wy: hit = True
+                    elif self.agent_orientation == Orientation.LEFT  and ay == wy and ax > wx: hit = True
+                    elif self.agent_orientation == Orientation.DOWN  and ax == wx and ay > wy: hit = True
                     if hit:
                         self.wumpus_alive = False
                         self.percept["scream"] = True
+
         elif action == Action.CLIMB:
-            if self.agent_location == [1, 1]:
+            self.num_actions += 1
+            if self.agent_location == self.exit_location:
                 self.agent_in_cave = False
 
-        # Update percepts after action
-        new_percept = self._get_percept()
-        new_percept["bump"] = self.percept["bump"]
-        new_percept["scream"] = self.percept["scream"]
-        self.percept = new_percept
+        new_p = self._get_percept()
+        new_p["bump"] = self.percept["bump"]
+        new_p["scream"] = self.percept["scream"]
+        self.percept = new_p
+
+    # ─── Score ──────────────────────────────────────────────────────────
 
     def get_score(self):
-        score = -self.num_actions
-        if not self.agent_has_arrow:
-            score -= 9
-        if self.agent_has_gold and not self.agent_in_cave:
-            score += 1000
-        if not self.agent_alive:
-            score -= 1000
-        return score
+        s = 1000 - self.num_actions
+        if not self.wumpus_alive:       s += 500
+        if self.agent_has_gold:         s += 1000
+        if not self.agent_in_cave and self.agent_has_gold: s += 2000
+        if not self.agent_alive:        s -= 1000
+        return s
 
     def is_game_over(self):
         return not self.agent_alive or not self.agent_in_cave
 
     def get_state(self):
-        orient_map = {Orientation.RIGHT: "RIGHT", Orientation.UP: "UP", Orientation.LEFT: "LEFT", Orientation.DOWN: "DOWN"}
+        om = {Orientation.RIGHT: "RIGHT", Orientation.UP: "UP",
+              Orientation.LEFT: "LEFT",  Orientation.DOWN: "DOWN"}
+        wl = [[[c1[0]-1, c1[1]-1], [c2[0]-1, c2[1]-1]] for c1, c2 in self.walls]
         return {
             "size": self.size,
-            "agent_pos": [self.agent_location[0]-1, self.agent_location[1]-1],
-            "agent_dir": orient_map[self.agent_orientation],
-            "score": self.get_score(),
-            "moves": self.num_actions,
-            "percepts": self.percept,
-            "is_over": self.is_game_over(),
-            "last_action": self.last_action,
-            "agent_alive": self.agent_alive,
+            "agent_pos":  [self.agent_location[0]-1, self.agent_location[1]-1],
+            "agent_dir":  om[self.agent_orientation],
+            "score":      self.get_score(),
+            "moves":      self.num_actions,
+            "percepts":   self.percept,
+            "is_over":    self.is_game_over(),
+            "last_action":self.last_action,
+            "agent_alive":self.agent_alive,
             "agent_has_gold": self.agent_has_gold,
-            "wumpus_alive": self.wumpus_alive,
+            "agent_has_arrow": self.agent_has_arrow,
+            "wumpus_alive":   self.wumpus_alive,
             "wumpus_pos": [self.wumpus_location[0]-1, self.wumpus_location[1]-1],
-            "gold_pos": [self.gold_location[0]-1, self.gold_location[1]-1],
-            "pits": [[p[0]-1, p[1]-1] for p in self.pit_locations]
+            "gold_pos":   [self.gold_location[0]-1, self.gold_location[1]-1],
+            "exit_pos":   [self.exit_location[0]-1, self.exit_location[1]-1],
+            "pits":       [[p[0]-1, p[1]-1] for p in self.pit_locations],
+            "walls":      wl,
         }

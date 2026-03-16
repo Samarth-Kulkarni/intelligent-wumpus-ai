@@ -30,23 +30,34 @@ class LogicEngine:
 
     def _initialize_rules(self):
         """Initializes the background rules of the Wumpus World."""
-        # 1. Start square (0,0) is always safe
+        # 1. Start square (1,1) (or rather 1-indexed, but our logic is 0-indexed)
+        # We index from 0 to size-1 here.
+        # Start square (0,0) is always safe
         self.kb.append(Not(self.symbols["P_0_0"]))
         self.kb.append(Not(self.symbols["W_0_0"]))
 
-        # 2. Breeze <=> Pit in neighbor
+        # 2. Breeze <=> Pit in neighbor (AND NOT WALL: but simplified for now, as pits aren't in walls)
         for x in range(self.size):
             for y in range(self.size):
                 neighbors = self._get_neighbors(x, y)
                 neighbor_pits = [self.symbols[f"P_{nx}_{ny}"] for nx, ny in neighbors]
-                self.kb.append(Equivalent(self.symbols[f"B_{x}_{y}"], Or(*neighbor_pits)))
+                if neighbor_pits:
+                    self.kb.append(Equivalent(self.symbols[f"B_{x}_{y}"], Or(*neighbor_pits)))
 
         # 3. Stench <=> Wumpus in neighbor
         for x in range(self.size):
             for y in range(self.size):
                 neighbors = self._get_neighbors(x, y)
                 neighbor_wumpus = [self.symbols[f"W_{nx}_{ny}"] for nx, ny in neighbors]
-                self.kb.append(Equivalent(self.symbols[f"S_{x}_{y}"], Or(*neighbor_wumpus)))
+                if neighbor_wumpus:
+                    self.kb.append(Equivalent(self.symbols[f"S_{x}_{y}"], Or(*neighbor_wumpus)))
+
+    def add_wall_rule(self, x, y):
+        """Informs the logic engine that a cell is a wall (cannot contain pits/wumpus or be walked on)."""
+        # If it is a wall, it is physically impossible to be a Pit or Wumpus
+        if f"P_{x}_{y}" in self.symbols:
+            self.kb.append(Not(self.symbols[f"P_{x}_{y}"]))
+            self.kb.append(Not(self.symbols[f"W_{x}_{y}"]))
 
     def add_percept(self, x, y, breeze, stench):
         """Adds observed percepts at a specific location to the KB."""

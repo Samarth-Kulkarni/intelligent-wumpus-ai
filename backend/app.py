@@ -1,9 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import sys
-import os
+import sys, os
 
-# Add the simulator and AI paths to sys.path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'simulator'))
 sys.path.append(os.path.dirname(__file__))
 
@@ -19,16 +17,17 @@ def index():
     return app.send_static_file('index.html')
 
 # Global instances
-game_instance = WumpusWorld(size=4)
-ai_agent = IntelligentAgent(size=4)
+game_instance = WumpusWorld(size=8)
+ai_agent = IntelligentAgent(size=8)
 
 def get_combined_state():
     state = game_instance.get_state()
-    # Update AI with new percepts
     x, y = state['agent_pos']
-    ai_agent.update_knowledge(x, y, state['percepts'])
-    
-    # Get AI's thoughts and best action
+    ai_agent.update_knowledge(x, y, state['percepts'], state.get('walls', []))
+    # Sync authoritative game state into AI agent
+    ai_agent.has_gold = state['agent_has_gold']
+    ai_agent.wumpus_alive = state['wumpus_alive']
+    ai_agent.has_arrow = state.get('agent_has_arrow', True)
     ai_logic = ai_agent.get_recommendation(state['agent_dir'])
     state['ai_thoughts'] = ai_logic['thoughts']
     state['best_action'] = ai_logic['best_action']
@@ -39,7 +38,7 @@ def get_combined_state():
 def init_game():
     global game_instance, ai_agent
     data = request.json or {}
-    size = data.get('size', 4)
+    size = data.get('size', 8)
     game_instance = WumpusWorld(size=size)
     ai_agent = IntelligentAgent(size=size)
     return jsonify(get_combined_state())
@@ -52,27 +51,17 @@ def get_state():
 def step():
     if game_instance.is_game_over():
         return jsonify({"error": "Game is over", "state": get_combined_state()}), 400
-    
     data = request.json
     action_str = data.get('action')
-    
     action_map = {
-        "FORWARD": Action.GOFORWARD,
-        "TURNLEFT": Action.TURNLEFT,
-        "TURNRIGHT": Action.TURNRIGHT,
-        "GRAB": Action.GRAB,
-        "SHOOT": Action.SHOOT,
-        "CLIMB": Action.CLIMB
+        "FORWARD": Action.GOFORWARD, "TURNLEFT": Action.TURNLEFT,
+        "TURNRIGHT": Action.TURNRIGHT, "GRAB": Action.GRAB,
+        "SHOOT": Action.SHOOT, "CLIMB": Action.CLIMB,
     }
-    
     if action_str not in action_map:
         return jsonify({"error": "Invalid action"}), 400
-        
     game_instance.execute_action(action_map[action_str])
     return jsonify(get_combined_state())
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
