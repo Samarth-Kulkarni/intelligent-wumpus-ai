@@ -37,31 +37,32 @@ In this simulation:
 ## 🚀 Key Features
 
 ### 🧠 Intelligent AI Agent
-- **First Order Logic (FOL):** SymPy-powered deduction proves cell safety
-- **Probabilistic Reasoning:** Bayesian-style risk estimation when logic is insufficient
-- **Committed Navigation Plans:** BFS path planning prevents the agent from getting stuck
-- **Wumpus Hunting:** Agent shoots when stench is detected; tracks arrow usage
-- **Gold Collection & Homing:** Grabs gold on glitter, then BFS shortest path to EXIT
+- **First-Order Logic (FOL):** Custom mathematical Forward-Chaining deduction proves cell safety
+- **Probabilistic Reasoning:** Fractional Bayesian risk estimation when logic is insufficient
+- **Advanced Navigation:** A* (A-Star) Search and BFS path planning prevents the agent from getting stuck
+- **Wumpus Hunting:** Agent detects directional high/low stench intensities and shoots arrow
+- **Gold Collection & Homing:** Grabs gold on max glitter, then A* shortest path to EXIT
 
 ### 🗺️ Proper Maze Environment
 - **DFS Recursive Backtracking** generates real corridors with wall edges
 - **Wall-edge rendering** — walls are drawn as lines between cells, not blocks
 - **START** (bottom-left) and **EXIT** (top-right) clearly labeled
-- **Scoring System:** Base 1000, −1/action, +500 kill Wumpus, +1000 grab gold, +2000 exit with gold, −1000 die
+- **Scoring System:** Base 500, −10/action, +500 kill Wumpus, +500 grab gold, +1000 exit with gold, −500 die
 
-### 🎮 Dual Mode Operation
+### 🎮 Operation Modes
 - **Manual Mode:** Control with keyboard — `↑/W` move, `←/A` turn left, `→/D` turn right, `G` grab, `S` shoot, `C` climb
 - **Auto Mode:** Watch the AI autonomously explore, reason, and solve the maze
+- **Batch Simulator:** Instantly run 100 simulations in the background to calculate statistical win rates
 
 ### 💻 Interactive Dashboard
 - **Real-time maze visualization** on HTML5 Canvas
 - **Percept indicators** light up based on current cell signals
-- **Action Log** traces every decision
-- **AI Reasoning panel** shows logical deductions and probabilistic analysis
-- **Knowledge Base counter** tracks proven-safe facts
+- **Action Log** tracks and traces every decision horizontally across the UI
+- **AI Reasoning panel** shows live logical deductions and probabilistic analysis
+- **Nodes Expanded counter** dynamically compares search algorithm efficiency
+- **Knowledge Base counter** tracks proven-safe mathematical axioms
 - **Game Over modal** displays final score, moves, gold status, and Wumpus kill status
-
----
+----
 
 ## 🏗️ System Architecture
 
