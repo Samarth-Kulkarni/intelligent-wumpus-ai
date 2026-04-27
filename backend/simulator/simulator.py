@@ -41,6 +41,21 @@ class WumpusWorld:
 
         self._generate_maze()
         self._place_entities()
+        self.visited_locations = {tuple(self.agent_location)}
+        self.percept = self._get_percept()
+
+    def reset(self):
+        """Resets the agent state without regenerating the maze."""
+        self.wumpus_alive = True
+        self.agent_location = [1, 1]
+        self.agent_orientation = Orientation.RIGHT
+        self.agent_alive = True
+        self.agent_has_arrow = True
+        self.agent_has_gold = False
+        self.agent_in_cave = True
+        self.num_actions = 0
+        self.last_action = ""
+        self.visited_locations = {tuple(self.agent_location)}
         self.percept = self._get_percept()
 
     # ─── Maze Generation ────────────────────────────────────────────────
@@ -121,16 +136,43 @@ class WumpusWorld:
         return out
 
     def _get_percept(self):
-        p = {"stench": False, "breeze": False, "glitter": False, "bump": False, "scream": False}
+        p = {"stench": False, "breeze": False, "glitter": False, "bump": False, "scream": False,
+             "stench_intensity": "none", "breeze_intensity": "none", "glitter_intensity": "none"}
+             
+        ax, ay = self.agent_location
+        dx, dy = 0, 0
+        if   self.agent_orientation == Orientation.RIGHT: dx = 1
+        elif self.agent_orientation == Orientation.UP:    dy = 1
+        elif self.agent_orientation == Orientation.LEFT:  dx = -1
+        elif self.agent_orientation == Orientation.DOWN:  dy = -1
+        facing_loc = [ax + dx, ay + dy]
+
         for n in self._connected_neighbors(self.agent_location):
             if n == self.wumpus_location and self.wumpus_alive:
                 p["stench"] = True
+                if n == facing_loc:
+                    p["stench_intensity"] = "high"
+                elif p["stench_intensity"] != "high":
+                    p["stench_intensity"] = "low"
             if n in self.pit_locations:
                 p["breeze"] = True
+                if n == facing_loc:
+                    p["breeze_intensity"] = "high"
+                elif p["breeze_intensity"] != "high":
+                    p["breeze_intensity"] = "low"
+            if n == self.gold_location and not self.agent_has_gold:
+                p["glitter"] = True
+                if n == facing_loc:
+                    p["glitter_intensity"] = "high"
+                elif p["glitter_intensity"] != "high":
+                    p["glitter_intensity"] = "low"
+                    
         if self.agent_location == self.wumpus_location and self.wumpus_alive:
             p["stench"] = True
+            p["stench_intensity"] = "high"
         if not self.agent_has_gold and self.agent_location == self.gold_location:
             p["glitter"] = True
+            p["glitter_intensity"] = "max"
         return p
 
     # ─── Actions ────────────────────────────────────────────────────────
@@ -156,6 +198,7 @@ class WumpusWorld:
                 self.percept["bump"] = True
             else:
                 self.agent_location = [nx, ny]
+                self.visited_locations.add(tuple(self.agent_location))
 
             if self.agent_location in self.pit_locations:
                 self.agent_alive = False
@@ -163,8 +206,10 @@ class WumpusWorld:
                 self.agent_alive = False
 
         elif action == Action.TURNLEFT:
+            self.num_actions += 1
             self.agent_orientation = (self.agent_orientation + 1) % 4
         elif action == Action.TURNRIGHT:
+            self.num_actions += 1
             self.agent_orientation = (self.agent_orientation - 1) % 4
 
         elif action == Action.GRAB:
@@ -201,11 +246,11 @@ class WumpusWorld:
     # ─── Score ──────────────────────────────────────────────────────────
 
     def get_score(self):
-        s = 1000 - self.num_actions
+        s = 500 - (self.num_actions * 10)
         if not self.wumpus_alive:       s += 500
-        if self.agent_has_gold:         s += 1000
-        if not self.agent_in_cave and self.agent_has_gold: s += 2000
-        if not self.agent_alive:        s -= 1000
+        if self.agent_has_gold:         s += 500
+        if not self.agent_in_cave and self.agent_has_gold: s += 1000
+        if not self.agent_alive:        s -= 500
         return s
 
     def is_game_over(self):
@@ -233,4 +278,5 @@ class WumpusWorld:
             "exit_pos":   [self.exit_location[0]-1, self.exit_location[1]-1],
             "pits":       [[p[0]-1, p[1]-1] for p in self.pit_locations],
             "walls":      wl,
+            "visited_cells": [[v[0]-1, v[1]-1] for v in self.visited_locations],
         }

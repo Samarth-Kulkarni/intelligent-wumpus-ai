@@ -32,7 +32,7 @@ body {
 
 .glass-container {
     width: 95%;
-    max-width: 1200px;
+    max-width: 1500px;
     padding: 2.5rem;
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
@@ -66,9 +66,13 @@ header h1 {
 
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.game-view {
+    align-self: start;
 }
 
 .card {
@@ -143,8 +147,29 @@ canvas {
 }
 
 .indicator.active[data-type="stench"] { background: rgba(220, 38, 38, 0.2); color: #fca5a5; border-color: #dc2626; box-shadow: 0 0 15px rgba(220, 38, 38, 0.2); }
+.indicator.active.intensity-low[data-type="stench"] { opacity: 0.6; box-shadow: none; border-color: rgba(220, 38, 38, 0.4); }
+.indicator.active.intensity-high[data-type="stench"] { background: rgba(220, 38, 38, 0.35); border-color: #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); font-weight: 700; transform: scale(1.05); }
+
 .indicator.active[data-type="breeze"] { background: rgba(2, 132, 199, 0.2); color: #7dd3fc; border-color: #0284c7; box-shadow: 0 0 15px rgba(2, 132, 199, 0.2); }
+.indicator.active.intensity-low[data-type="breeze"] { opacity: 0.6; box-shadow: none; border-color: rgba(2, 132, 199, 0.4); }
+.indicator.active.intensity-high[data-type="breeze"] { background: rgba(2, 132, 199, 0.35); border-color: #38bdf8; box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); font-weight: 700; transform: scale(1.05); }
 .indicator.active[data-type="glitter"] { background: rgba(202, 138, 4, 0.2); color: #fde047; border-color: #ca8a04; box-shadow: 0 0 15px rgba(202, 138, 4, 0.2); }
+.indicator.active.intensity-low[data-type="glitter"] { opacity: 0.6; box-shadow: none; border-color: rgba(202, 138, 4, 0.4); }
+.indicator.active.intensity-high[data-type="glitter"] { background: rgba(202, 138, 4, 0.35); border-color: #eab308; box-shadow: 0 0 20px rgba(234, 179, 8, 0.5); font-weight: 700; transform: scale(1.05); }
+.indicator.active.intensity-max[data-type="glitter"] { 
+    background: rgba(234, 179, 8, 0.4); 
+    border-color: #fde047; 
+    box-shadow: 0 0 30px rgba(253, 224, 71, 0.8); 
+    font-weight: 800; 
+    transform: scale(1.1); 
+    animation: pulseGold 1.5s infinite;
+}
+
+@keyframes pulseGold {
+    0% { box-shadow: 0 0 20px rgba(253, 224, 71, 0.6); }
+    50% { box-shadow: 0 0 40px rgba(253, 224, 71, 1); border-color: #fef08a; }
+    100% { box-shadow: 0 0 20px rgba(253, 224, 71, 0.6); }
+}
 .indicator.active[data-type="bump"] { background: rgba(71, 85, 105, 0.4); color: #cbd5e1; border-color: #475569; }
 .indicator.active[data-type="scream"] { background: rgba(147, 51, 234, 0.2); color: #d8b4fe; border-color: #9333ea; box-shadow: 0 0 15px rgba(147, 51, 234, 0.2); }
 

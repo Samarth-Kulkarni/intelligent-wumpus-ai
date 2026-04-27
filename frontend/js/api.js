@@ -10,6 +10,31 @@ const wumpusApi = {
         return res.json();
     },
 
+    async retry() {
+        const res = await fetch(`${API_BASE}/retry`, {
+            method: 'POST'
+        });
+        return res.json();
+    },
+
+    async runBatch(iterations, algo) {
+        const res = await fetch(`${API_BASE}/batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ iterations, algo })
+        });
+        return res.json();
+    },
+
+    async setAlgo(algo) {
+        const res = await fetch(`${API_BASE}/algo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ algo })
+        });
+        return res.json();
+    },
+
     async step(action) {
         const res = await fetch(`${API_BASE}/step`, {
             method: 'POST',

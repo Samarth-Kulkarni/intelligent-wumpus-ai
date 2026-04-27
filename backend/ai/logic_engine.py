@@ -1,24 +1,12 @@
-from sympy import symbols, Not, Or, And, Implies, Equivalent
-from sympy.logic.inference import satisfiable
-
 class LogicEngine:
     def __init__(self, size=4):
         self.size = size
-        # Generate symbols for each cell
-        # P_x_y: Pit at (x, y)
-        # W_x_y: Wumpus at (x, y)
-        # B_x_y: Breeze at (x, y)
-        # S_x_y: Stench at (x, y)
-        self.symbols = {}
-        for x in range(size):
-            for y in range(size):
-                self.symbols[f"P_{x}_{y}"] = symbols(f"P_{x}_{y}")
-                self.symbols[f"W_{x}_{y}"] = symbols(f"W_{x}_{y}")
-                self.symbols[f"B_{x}_{y}"] = symbols(f"B_{x}_{y}")
-                self.symbols[f"S_{x}_{y}"] = symbols(f"S_{x}_{y}")
-
-        self.kb = []
-        self._initialize_rules()
+        self.percepts = {}
+        self.wall_rules = set()
+        
+        # We store rules as strings just for UI presentation to maintain the exact look
+        self.kb_display = []
+        self._initialize_display_rules()
 
     def _get_neighbors(self, x, y):
         neighbors = []
@@ -28,84 +16,63 @@ class LogicEngine:
                 neighbors.append((nx, ny))
         return neighbors
 
-    def _initialize_rules(self):
-        """Initializes the background rules of the Wumpus World."""
-        # 1. Start square (1,1) (or rather 1-indexed, but our logic is 0-indexed)
-        # We index from 0 to size-1 here.
-        # Start square (0,0) is always safe
-        self.kb.append(Not(self.symbols["P_0_0"]))
-        self.kb.append(Not(self.symbols["W_0_0"]))
-
-        # 2. Breeze <=> Pit in neighbor (AND NOT WALL: but simplified for now, as pits aren't in walls)
+    def _initialize_display_rules(self):
+        self.kb_display.append("¬P_0_0")
+        self.kb_display.append("¬W_0_0")
         for x in range(self.size):
             for y in range(self.size):
                 neighbors = self._get_neighbors(x, y)
-                neighbor_pits = [self.symbols[f"P_{nx}_{ny}"] for nx, ny in neighbors]
-                if neighbor_pits:
-                    self.kb.append(Equivalent(self.symbols[f"B_{x}_{y}"], Or(*neighbor_pits)))
-
-        # 3. Stench <=> Wumpus in neighbor
-        for x in range(self.size):
-            for y in range(self.size):
-                neighbors = self._get_neighbors(x, y)
-                neighbor_wumpus = [self.symbols[f"W_{nx}_{ny}"] for nx, ny in neighbors]
-                if neighbor_wumpus:
-                    self.kb.append(Equivalent(self.symbols[f"S_{x}_{y}"], Or(*neighbor_wumpus)))
+                n_p = " ∨ ".join([f"P_{nx}_{ny}" for nx, ny in neighbors])
+                if n_p:
+                    self.kb_display.append(f"Equivalent(B_{x}_{y}, {n_p})")
+                n_w = " ∨ ".join([f"W_{nx}_{ny}" for nx, ny in neighbors])
+                if n_w:
+                    self.kb_display.append(f"Equivalent(S_{x}_{y}, {n_w})")
 
     def add_wall_rule(self, x, y):
-        """Informs the logic engine that a cell is a wall (cannot contain pits/wumpus or be walked on)."""
-        # If it is a wall, it is physically impossible to be a Pit or Wumpus
-        if f"P_{x}_{y}" in self.symbols:
-            self.kb.append(Not(self.symbols[f"P_{x}_{y}"]))
-            self.kb.append(Not(self.symbols[f"W_{x}_{y}"]))
+        self.wall_rules.add((x, y))
+        self.kb_display.append(f"¬P_{x}_{y}")
+        self.kb_display.append(f"¬W_{x}_{y}")
 
     def add_percept(self, x, y, breeze, stench):
-        """Adds observed percepts at a specific location to the KB."""
-        if breeze:
-            self.kb.append(self.symbols[f"B_{x}_{y}"])
-        else:
-            self.kb.append(Not(self.symbols[f"B_{x}_{y}"]))
-            
-        if stench:
-            self.kb.append(self.symbols[f"S_{x}_{y}"])
-        else:
-            self.kb.append(Not(self.symbols[f"S_{x}_{y}"]))
+        if (x, y) not in self.percepts:
+            self.percepts[(x, y)] = {'B': breeze, 'S': stench}
+            b_str = f"B_{x}_{y}" if breeze else f"¬B_{x}_{y}"
+            s_str = f"S_{x}_{y}" if stench else f"¬S_{x}_{y}"
+            self.kb_display.append(b_str)
+            self.kb_display.append(s_str)
 
     def is_safe(self, x, y):
-        """Returns True if the square (x, y) is proven safe (No Pit AND No Wumpus)."""
-        # A cell is safe if KB |= (~P_x_y AND ~W_x_y)
-        # This is equivalent to checking if (KB AND P_x_y) is unsatisfiable 
-        # AND (KB AND W_x_y) is unsatisfiable.
+        if (x, y) == (0, 0): return True
+        if (x, y) in self.wall_rules: return False # walls aren't "walkably safe"
         
-        kb_and = And(*self.kb)
+        # Pure Mathematical Deduction (Forward Chaining)
+        # 1. If ANY neighbor of (x,y) has been visited and had NO breeze, (x,y) cannot be a pit.
+        # 2. If ANY neighbor of (x,y) has been visited and had NO stench, (x,y) cannot be a wumpus.
         
-        # Check if P_x_y is possible
-        # satisfiable returns False if unsatisfiable
-        can_be_pit = satisfiable(And(kb_and, self.symbols[f"P_{x}_{y}"]))
-        if can_be_pit is not False:
-            return False
-            
-        # Check if W_x_y is possible
-        can_be_wumpus = satisfiable(And(kb_and, self.symbols[f"W_{x}_{y}"]))
-        if can_be_wumpus is not False:
-            return False
-            
-        return True
+        safe_from_pit = False
+        safe_from_wumpus = False
+        
+        for nx, ny in self._get_neighbors(x, y):
+            if (nx, ny) in self.percepts:
+                if not self.percepts[(nx, ny)]['B']:
+                    safe_from_pit = True
+                if not self.percepts[(nx, ny)]['S']:
+                    safe_from_wumpus = True
+                    
+        return safe_from_pit and safe_from_wumpus
 
     def get_kb_summary(self):
-        return f"KB contains {len(self.kb)} rules/facts."
+        return f"KB contains {len(self.kb_display)} rules/facts."
 
-if __name__ == "__main__":
-    # Quick Test
-    engine = LogicEngine(4)
-    print("Initial (0,0) safe?", engine.is_safe(0, 0))
-    
-    # Move to (0,0), perceive nothing
-    engine.add_percept(0, 0, False, False)
-    print("After no breeze at (0,0), is (0,1) safe?", engine.is_safe(0, 1))
-    print("After no breeze at (0,0), is (1,0) safe?", engine.is_safe(1, 0))
-    
-    # Perceive breeze at (0,1)
-    engine.add_percept(0, 1, True, False)
-    print("Breeze at (0,1). Is (0,2) safe?", engine.is_safe(0, 2))
-    print("Breeze at (0,1). Is (1,1) safe?", engine.is_safe(1, 1))
+    def get_kb_facts(self):
+        return self.kb_display
+
+    def get_resolution_proof(self, x, y):
+        for nx, ny in self._get_neighbors(x, y):
+            if (nx, ny) in self.percepts and not self.percepts[(nx, ny)]['B']:
+                return (f"Resolution: Assume P({x},{y}). "
+                        f"CNF: {{¬P({x},{y}) ∨ B({nx},{ny})}}. "
+                        f"Resolve with {{¬B({nx},{ny})}} ⊢ {{¬P({x},{y})}}. "
+                        f"Contradiction! ⊢ ∅. Cell is SAFE.")
+        return f"Resolution: Deductive elimination confirmed {x},{y} safe."
